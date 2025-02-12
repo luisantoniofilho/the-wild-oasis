@@ -63,6 +63,7 @@ function CheckinBooking() {
       });
     } else {
       checkin({ bookingId, breakfast: {} });
+      console.log(settings);
     }
   }
 

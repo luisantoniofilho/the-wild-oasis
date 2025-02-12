@@ -41,26 +41,43 @@ async function createCabins() {
 }
 
 async function createBookings() {
-  // Bookings need a guestId and a cabinId. We can't tell Supabase IDs for each object, it will calculate them on its own. So it might be different for different people, especially after multiple uploads. Therefore, we need to first get all guestIds and cabinIds, and then replace the original IDs in the booking data with the actual ones from the DB
-  const { data: guestsIds } = await supabase
+  // Buscar os IDs reais de guests e cabins no Supabase
+  const { data: guestsIds, error: guestsError } = await supabase
     .from("guests")
     .select("id")
     .order("id");
-  const allGuestIds = guestsIds.map((cabin) => cabin.id);
-  const { data: cabinsIds } = await supabase
+
+  if (guestsError) {
+    console.error("Erro ao buscar guests:", guestsError);
+    return;
+  }
+
+  const { data: cabinsIds, error: cabinsError } = await supabase
     .from("cabins")
     .select("id")
     .order("id");
-  const allCabinIds = cabinsIds.map((cabin) => cabin.id);
 
+  if (cabinsError) {
+    console.error("Erro ao buscar cabins:", cabinsError);
+    return;
+  }
+
+  // Criar mapas para garantir a associação correta de IDs
+  const guestMap = new Map(
+    guestsIds.map((guest, index) => [index + 1, guest.id])
+  );
+  const cabinMap = new Map(
+    cabinsIds.map((cabin, index) => [index + 1, cabin.id])
+  );
+
+  // Criar bookings finais com os IDs reais
   const finalBookings = bookings.map((booking) => {
-    // Here relying on the order of cabins, as they don't have and ID yet
     const cabin = cabins.at(booking.cabinId - 1);
     const numNights = subtractDates(booking.endDate, booking.startDate);
     const cabinPrice = numNights * (cabin.regularPrice - cabin.discount);
     const extrasPrice = booking.hasBreakfast
       ? numNights * 15 * booking.numGuests
-      : 0; // hardcoded breakfast price
+      : 0;
     const totalPrice = cabinPrice + extrasPrice;
 
     let status;
@@ -88,16 +105,17 @@ async function createBookings() {
       cabinPrice,
       extrasPrice,
       totalPrice,
-      guestId: allGuestIds.at(booking.guestId - 1),
-      cabinId: allCabinIds.at(booking.cabinId - 1),
+      guestId: guestMap.get(booking.guestId), // Garantindo o ID correto
+      cabinId: cabinMap.get(booking.cabinId), // Garantindo o ID correto
       status,
     };
   });
 
-  console.log(finalBookings);
+  console.log("Final bookings:", finalBookings);
 
+  // Inserir os bookings no Supabase
   const { error } = await supabase.from("bookings").insert(finalBookings);
-  if (error) console.log(error.message);
+  if (error) console.error("Erro ao criar bookings:", error);
 }
 
 function Uploader() {
@@ -118,13 +136,6 @@ function Uploader() {
     setIsLoading(false);
   }
 
-  async function uploadBookings() {
-    setIsLoading(true);
-    await deleteBookings();
-    await createBookings();
-    setIsLoading(false);
-  }
-
   return (
     <div
       style={{
@@ -142,10 +153,6 @@ function Uploader() {
 
       <Button onClick={uploadAll} disabled={isLoading}>
         Upload ALL
-      </Button>
-
-      <Button onClick={uploadBookings} disabled={isLoading}>
-        Upload bookings ONLY
       </Button>
     </div>
   );
