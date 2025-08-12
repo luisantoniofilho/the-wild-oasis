@@ -1,6 +1,6 @@
 # The Wild Oasis
 
-### [➡️ Ver Demo Ao Vivo](https://the-wild-oasis-web-js.netlify.app/dashboard)
+### [➡️ Ver Demo Ao Vivo](https://the-wild-oasis-web-js.netlify.app/)
 
 > Painel de gerenciamento interno para uma rede de hotéis boutique, focado em alta produtividade e uma experiência de usuário moderna.
 

@@ -1,5 +1,7 @@
 # The Wild Oasis
 
+### [➡️ Live demo](https://the-wild-oasis-web-js.netlify.app/)
+
 > An internal management dashboard for a boutique hotel chain, focused on high productivity and a modern user experience.
 
 ## 📜 About The Project
